@@ -2,6 +2,7 @@ import './styles.css';
 import { api, configurado } from './api';
 import { mensagemDe } from './api/rpc';
 import type { DadosPublicos } from './lib/tipos';
+import { montarAdmin } from './ui/admin';
 import { aviso, h } from './ui/dom';
 import { montarEditor } from './ui/editor';
 import { montarTelaPrincipal } from './ui/telaPrincipal';
@@ -35,7 +36,7 @@ async function rotear(): Promise<void> {
   }
 
   if (rota === '/marcar') montarEditor(raiz, dados, recarregar);
-  else if (rota === '/admin') raiz.replaceChildren(h('main', { class: 'pagina' }, aviso('info', 'Administração em construção.')));
+  else if (rota === '/admin') montarAdmin(raiz, dados, recarregar);
   else montarTelaPrincipal(raiz, dados);
 }
 
