@@ -1,0 +1,34 @@
+# Evita a pausa por inatividade do Supabase Free e reativa o próprio agendamento,
+# que o GitHub desliga após 60 dias sem atividade no repositório.
+name: Keep-alive Supabase
+
+on:
+  schedule:
+    - cron: '0 12 */3 * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      PROD_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      PROD_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      DEV_URL: ${{ secrets.SUPABASE_TEST_URL }}
+      DEV_KEY: ${{ secrets.SUPABASE_TEST_ANON_KEY }}
+    steps:
+      - name: Ping produção
+        run: |
+          curl -fsS -X POST "$PROD_URL/rest/v1/rpc/ping" \
+            -H "apikey: $PROD_KEY" -H "Content-Type: application/json" -d '{}'
+      - name: Ping dev
+        if: env.DEV_URL != ''
+        run: |
+          curl -fsS -X POST "$DEV_URL/rest/v1/rpc/ping" \
+            -H "apikey: $DEV_KEY" -H "Content-Type: application/json" -d '{}'
+      - name: Manter o agendamento ativo
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keep-alive.yml/enable"
