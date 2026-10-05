@@ -57,6 +57,27 @@ describe('PIN', () => {
     await expect(api.entrar(ids.ana, '1234')).rejects.toThrow('Bloqueado até');
   });
 
+  it('bloqueio dobra a cada bloqueio seguido e zera após acerto', async () => {
+    await api.definirPin(ids.ana, '1234');
+    const errar5 = async (esperado: string) => {
+      for (let i = 1; i <= 4; i++) await expect(api.entrar(ids.ana, '0000')).rejects.toThrow('tentativa(s) restante(s)');
+      await expect(api.entrar(ids.ana, '0000')).rejects.toThrow(esperado);
+    };
+    const destrancar = async () => {
+      const { error } = await servico.from('procuradores').update({ bloqueado_ate: '2000-01-01T00:00:00Z' }).eq('id', ids.ana);
+      expect(error).toBeNull();
+    };
+
+    await errar5('Bloqueado por 15 minutos');
+    await destrancar();
+    await errar5('Bloqueado por 30 minutos');
+    await destrancar();
+    await errar5('Bloqueado por 60 minutos');
+    await destrancar();
+    await expect(api.entrar(ids.ana, '1234')).resolves.toMatch(/^[0-9a-f]{64}$/);
+    await errar5('Bloqueado por 15 minutos');
+  });
+
   it('procurador inativo não cria PIN nem entra', async () => {
     await expect(api.definirPin(ids.inativo, '1234')).rejects.toThrow('Procurador não encontrado.');
     await expect(api.entrar(ids.inativo, '1234')).rejects.toThrow('Procurador não encontrado.');

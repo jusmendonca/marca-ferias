@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { criarApi, type ClienteRpc } from '../../src/api/rpc';
-import { publico, resetar, SENHA_ADMIN, type Ids } from './ambiente';
+import { publico, resetar, SENHA_ADMIN, servico, type Ids } from './ambiente';
 
 const api = criarApi(publico as unknown as ClienteRpc);
 let ids: Ids;
@@ -14,6 +14,17 @@ beforeEach(async () => {
 describe('admin', () => {
   it('rejeita senha errada', async () => {
     await expect(api.adminEntrar('errada')).rejects.toThrow('Senha incorreta.');
+  });
+
+  it('bloqueia o login do admin após 5 senhas erradas, inclusive para a senha certa', async () => {
+    for (let i = 1; i <= 4; i++) await expect(api.adminEntrar('errada')).rejects.toThrow('Senha incorreta.');
+    await expect(api.adminEntrar('errada')).rejects.toThrow('Bloqueado por 15 minutos');
+    await expect(api.adminEntrar(SENHA_ADMIN)).rejects.toThrow('Bloqueado até');
+    const { error } = await servico.from('config').update({ admin_bloqueado_ate: '2000-01-01T00:00:00Z' }).eq('id', true);
+    expect(error).toBeNull();
+    await expect(api.adminEntrar(SENHA_ADMIN)).resolves.toMatch(/^[0-9a-f]{64}$/);
+    // acerto zera o contador: 4 erros seguidos ainda não bloqueiam
+    for (let i = 1; i <= 4; i++) await expect(api.adminEntrar('errada')).rejects.toThrow('Senha incorreta.');
   });
 
   it('exige token de admin (token de Procurador não serve)', async () => {
