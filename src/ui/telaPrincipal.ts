@@ -69,7 +69,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       h('div', { class: 'grupo-zoom', role: 'group', 'aria-label': 'Zoom' }, ...botoesZoom),
       h('p', { class: 'contador-geral' }, `${completos} de ${ativos.length} Procuradores com marcação completa`)),
     h('div', { class: 'legenda' },
-      item('ferias', 'Férias'), item('recesso', 'Recesso'), item('fds', 'Fim de semana'),
+      item('ferias', 'Férias'), item('bloqueio', 'Bloqueio de distribuição'), item('recesso', 'Recesso'), item('fds', 'Fim de semana'),
       item('feriado', 'Feriado'), item('facultativo', 'Ponto facultativo'), item('calor', 'Mais gente fora no setor')),
     area,
     dialogo,

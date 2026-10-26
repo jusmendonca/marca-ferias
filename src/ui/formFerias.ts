@@ -1,3 +1,4 @@
+import { diasBloqueados } from '../lib/bloqueios';
 import { diasCorridos, formatarBR } from '../lib/datas';
 import { colegasFora } from '../lib/ocupacao';
 import { FIM_ANO, INICIO_ANO, MAX_DIAS, periodoValido, statusProcurador, totalDias, validarMarcacao } from '../lib/regras';
@@ -24,6 +25,7 @@ interface LinhaPeriodo {
   fim: HTMLInputElement;
   dias: HTMLElement;
   colegas: HTMLElement;
+  bloqueio: HTMLElement;
 }
 
 export function formularioFerias(op: OpcoesFormFerias): HTMLElement {
@@ -49,7 +51,8 @@ export function formularioFerias(op: OpcoesFormFerias): HTMLElement {
     });
     const dias = h('span', { class: 'dias' });
     const colegas = h('p', { class: 'colegas' });
-    linhas.push({ per, fim, dias, colegas });
+    const bloqueio = h('p', { class: 'colegas' });
+    linhas.push({ per, fim, dias, colegas, bloqueio });
     return h('li', { class: 'periodo' },
       h('div', { class: 'campos' },
         h('label', {}, 'Início', inicio),
@@ -59,6 +62,7 @@ export function formularioFerias(op: OpcoesFormFerias): HTMLElement {
           type: 'button', class: 'botao', 'aria-label': `Remover período ${i + 1}`,
           onclick: () => { estado.periodos.splice(i, 1); redesenhar(); },
         }, 'Remover')),
+      bloqueio,
       colegas);
   }
 
@@ -75,6 +79,13 @@ export function formularioFerias(op: OpcoesFormFerias): HTMLElement {
       l.fim.min = l.per.inicio || INICIO_ANO;
       l.dias.textContent = valido ? `${diasCorridos(l.per)} dia(s)` : '—';
       l.colegas.hidden = !valido;
+      l.bloqueio.hidden = !valido;
+      if (valido) {
+        const b = diasBloqueados(l.per, dados);
+        l.bloqueio.textContent = b.length
+          ? `Bloqueio de distribuição: ${b.length} dia(s) útil(eis), de ${formatarBR(b[0])} a ${formatarBR(b[b.length - 1])}.`
+          : 'Sem bloqueio de distribuição.';
+      }
       if (valido) {
         const colegas = colegasFora(dados, procurador.setor_id, l.per, procurador.id);
         l.colegas.textContent = colegas.length

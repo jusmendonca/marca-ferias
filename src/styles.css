@@ -12,6 +12,7 @@
   --perigo: #b42318;
   --ferias: #2f7de1;
   --recesso: #8a5cf6;
+  --bloqueio: #d9480f;
   --fds: rgba(120, 130, 150, 0.12);
   --feriado: rgba(225, 140, 30, 0.25);
   --facultativo: rgba(225, 190, 30, 0.2);
@@ -40,6 +41,7 @@
     --perigo: #f2867b;
     --ferias: #4c93f0;
     --recesso: #a585f8;
+    --bloqueio: #ff8a50;
     --fds: rgba(160, 170, 190, 0.08);
     --feriado: rgba(240, 160, 50, 0.22);
     --facultativo: rgba(240, 200, 60, 0.16);
@@ -95,6 +97,7 @@ input.curto { width: 80px; }
 .amostra { width: 18px; height: 12px; border-radius: 3px; display: inline-block; border: 1px solid var(--borda); }
 .amostra.ferias { background: var(--ferias); }
 .amostra.recesso { background: repeating-linear-gradient(45deg, var(--recesso) 0 3px, transparent 3px 6px); }
+.amostra.bloqueio { background: repeating-linear-gradient(135deg, var(--bloqueio) 0 3px, transparent 3px 6px); border-color: var(--bloqueio); }
 .amostra.fds { background: var(--fds); }
 .amostra.feriado { background: var(--feriado); }
 .amostra.facultativo { background: var(--facultativo); }
@@ -118,6 +121,7 @@ input.curto { width: 80px; }
 .setor-titulo, .setor-titulo .rotulo { background: var(--superficie-2); font-weight: 600; }
 .barra { position: absolute; top: 5px; height: 18px; border-radius: 4px; border: 0; padding: 0; }
 .barra.ferias { background: var(--ferias); cursor: pointer; }
+.barra.bloqueio { background: var(--bloqueio); }
 .barra.recesso { background: repeating-linear-gradient(45deg, var(--recesso) 0 4px, transparent 4px 8px); border: 1px solid var(--recesso); }
 .ocupacao .rotulo { font-size: 0.8rem; color: var(--texto-suave); }
 .celula { position: absolute; top: 0; bottom: 0; font-size: 11px; display: flex; align-items: center; justify-content: center; }

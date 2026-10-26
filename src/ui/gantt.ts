@@ -1,3 +1,4 @@
+import { diasBloqueados } from '../lib/bloqueios';
 import { diaDaSemana, diasCorridos, formatarBR, somarDias } from '../lib/datas';
 import { geometria, INICIO_GANTT, meses, PX_POR_DIA, totalDiasGantt, type Zoom } from '../lib/escala';
 import { ausenciasNoDia, periodosDe, procuradoresDoSetor, setoresOrdenados } from '../lib/ocupacao';
@@ -62,6 +63,17 @@ function linhaProcurador(dados: DadosPublicos, p: Procurador, op: OpcoesGantt): 
   const periodos = periodosDe(dados, p.id);
   const status = statusProcurador(periodos, p.recesso);
   const trilha = h('div', { class: 'trilha' });
+
+  for (const per of periodos) {
+    for (const dia of diasBloqueados(per, dados)) {
+      const g = geometria({ inicio: dia, fim: dia }, op.zoom);
+      if (!g) continue;
+      trilha.append(h('div', {
+        class: 'barra bloqueio', style: `left:${g.left}px;width:${g.width}px`,
+        title: `${p.nome}: bloqueio de distribuição em ${formatarBR(dia)} (férias a partir de ${formatarBR(per.inicio)})`,
+      }));
+    }
+  }
 
   for (const per of periodos) {
     const g = geometria(per, op.zoom);
