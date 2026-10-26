@@ -35,8 +35,16 @@ describe('ocupação', () => {
     expect(ausenciasNoDia(d, 1, '2027-01-01').ausentes.map(a => a.procurador.nome)).toEqual(['Bruno']);
   });
 
+  it('conta o bloqueio de distribuição como ausência', () => {
+    // Ana: férias 01–10/03 (10 dias → 4 dias úteis de bloqueio: 23 a 26/02)
+    expect(ausenciasNoDia(d, 1, '2027-02-26').ausentes.map(a => [a.procurador.nome, a.motivo])).toEqual([['Ana', 'bloqueio']]);
+    expect(ausenciasNoDia(d, 1, '2027-02-26').presentes).toBe(1);
+    expect(ausenciasNoDia(d, 1, '2027-02-22').presentes).toBe(2);
+  });
+
   it('lista colegas fora no período, exceto a própria pessoa e inativos', () => {
     expect(colegasFora(d, 1, { inicio: '2027-03-04', fim: '2027-03-05' }, 10)).toEqual([
+      { nome: 'Bruno', inicio: '2027-03-04', fim: '2027-03-04', motivo: 'bloqueio' },
       { nome: 'Bruno', inicio: '2027-03-05', fim: '2027-03-06', motivo: 'ferias' },
     ]);
     expect(colegasFora(d, 1, { inicio: '2026-12-21', fim: '2026-12-21' }, 11)).toEqual([

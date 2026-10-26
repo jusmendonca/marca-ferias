@@ -1,9 +1,10 @@
+import { bloqueiosDe, diasBloqueados } from './bloqueios';
 import { contem, sobrepoe } from './datas';
 import type { DadosPublicos, DataISO, Periodo, PeriodoFerias, Procurador, Setor } from './tipos';
 
 export interface Ausencia {
   procurador: Procurador;
-  motivo: 'ferias' | 'recesso';
+  motivo: 'ferias' | 'recesso' | 'bloqueio';
 }
 
 export interface OcupacaoDia {
@@ -16,7 +17,7 @@ export interface ColegaFora {
   nome: string;
   inicio: DataISO;
   fim: DataISO;
-  motivo: 'ferias' | 'recesso';
+  motivo: 'ferias' | 'recesso' | 'bloqueio';
 }
 
 const porNome = (a: { nome: string }, b: { nome: string }) => a.nome.localeCompare(b.nome, 'pt-BR');
@@ -39,6 +40,7 @@ export function ausenciasNoDia(d: DadosPublicos, setorId: number, dia: DataISO):
   for (const p of procs) {
     if (d.periodos.some(x => x.procurador_id === p.id && contem(x, dia))) ausentes.push({ procurador: p, motivo: 'ferias' });
     else if (p.recesso && contem(d.recesso[p.recesso], dia)) ausentes.push({ procurador: p, motivo: 'recesso' });
+    else if (bloqueiosDe(d, p.id).has(dia)) ausentes.push({ procurador: p, motivo: 'bloqueio' });
   }
   return { total: procs.length, presentes: procs.length - ausentes.length, ausentes };
 }
@@ -49,6 +51,10 @@ export function colegasFora(d: DadosPublicos, setorId: number, periodo: Periodo,
     if (p.id === excetoId) continue;
     for (const x of periodosDe(d, p.id)) {
       if (sobrepoe(x, periodo)) r.push({ nome: p.nome, inicio: x.inicio, fim: x.fim, motivo: 'ferias' });
+      const b = diasBloqueados(x, d);
+      if (b.length && sobrepoe({ inicio: b[0], fim: b[b.length - 1] }, periodo)) {
+        r.push({ nome: p.nome, inicio: b[0], fim: b[b.length - 1], motivo: 'bloqueio' });
+      }
     }
     if (p.recesso) {
       const rec = d.recesso[p.recesso];

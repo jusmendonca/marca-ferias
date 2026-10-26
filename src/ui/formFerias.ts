@@ -90,7 +90,7 @@ export function formularioFerias(op: OpcoesFormFerias): HTMLElement {
         const colegas = colegasFora(dados, procurador.setor_id, l.per, procurador.id);
         l.colegas.textContent = colegas.length
           ? 'Colegas do setor fora neste período: ' + colegas
-            .map(c => `${c.nome} (${formatarBR(c.inicio)}–${formatarBR(c.fim)}${c.motivo === 'recesso' ? ', recesso' : ''})`)
+            .map(c => `${c.nome} (${formatarBR(c.inicio)}–${formatarBR(c.fim)}${c.motivo === 'recesso' ? ', recesso' : c.motivo === 'bloqueio' ? ', bloqueio de distribuição' : ''})`)
             .join('; ')
           : 'Ninguém do seu setor estará fora neste período.';
       }

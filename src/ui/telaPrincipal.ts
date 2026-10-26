@@ -1,3 +1,4 @@
+import { diasBloqueados } from '../lib/bloqueios';
 import { diasCorridos, formatarBR } from '../lib/datas';
 import { ROTULO_ZOOM, type Zoom } from '../lib/escala';
 import { periodosDe, setoresOrdenados } from '../lib/ocupacao';
@@ -29,7 +30,15 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       h('h2', {}, p.nome),
       h('p', {}, `${totalDias(periodos)} / 30 dias — `, h('span', { class: `selo ${statusProcurador(periodos, p.recesso)}` }, statusProcurador(periodos, p.recesso))),
       periodos.length
-        ? h('ul', {}, ...periodos.map(x => h('li', {}, `${formatarBR(x.inicio)} a ${formatarBR(x.fim)} (${diasCorridos(x)} dias)`)))
+        ? h('ul', {}, ...periodos.map(x => {
+          const b = diasBloqueados(x, dados);
+          return h('li', {},
+            `${formatarBR(x.inicio)} a ${formatarBR(x.fim)} (${diasCorridos(x)} dias)`,
+            h('br'),
+            h('span', { class: 'dica' }, b.length
+              ? `Bloqueio de distribuição: ${b.length} dia(s) útil(eis) — ${b.map(formatarBR).join(', ')}`
+              : 'Sem bloqueio de distribuição'));
+        }))
         : h('p', {}, 'Nenhum período marcado.'),
       h('p', {}, p.recesso && rec
         ? `Recesso: ${ROTULO_RECESSO[p.recesso]} (${formatarBR(rec.inicio)} a ${formatarBR(rec.fim)})`
@@ -69,7 +78,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       h('div', { class: 'grupo-zoom', role: 'group', 'aria-label': 'Zoom' }, ...botoesZoom),
       h('p', { class: 'contador-geral' }, `${completos} de ${ativos.length} Procuradores com marcação completa`)),
     h('div', { class: 'legenda' },
-      item('ferias', 'Férias'), item('bloqueio', 'Bloqueio de distribuição'), item('recesso', 'Recesso'), item('fds', 'Fim de semana'),
+      item('ferias', 'Férias'), item('bloqueio', 'Bloqueio de distribuição (ausência)'), item('recesso', 'Recesso'), item('fds', 'Fim de semana'),
       item('feriado', 'Feriado'), item('facultativo', 'Ponto facultativo'), item('calor', 'Mais gente fora no setor')),
     area,
     dialogo,

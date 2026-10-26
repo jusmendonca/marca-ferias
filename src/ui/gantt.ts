@@ -108,7 +108,7 @@ function linhaOcupacao(dados: DadosPublicos, setorId: number, zoom: Zoom, px: nu
     const dia = somarDias(INICIO_GANTT, i);
     const o = ausenciasNoDia(dados, setorId, dia);
     const alfa = o.total ? ((o.total - o.presentes) / o.total) * 0.9 : 0;
-    const fora = o.ausentes.map(a => a.procurador.nome + (a.motivo === 'recesso' ? ' (recesso)' : '')).join(', ');
+    const fora = o.ausentes.map(a => a.procurador.nome + (a.motivo === 'recesso' ? ' (recesso)' : a.motivo === 'bloqueio' ? ' (bloqueio de distribuição)' : '')).join(', ');
     trilha.append(h('div', {
       class: 'celula',
       style: `left:${i * px}px;width:${px}px;background-color:rgba(var(--calor-rgb),${alfa.toFixed(2)})`,

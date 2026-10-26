@@ -19,6 +19,21 @@ export function ehDiaUtil(dia: DataISO, naoUteis: ReadonlySet<DataISO>): boolean
   return dow !== 0 && dow !== 6 && !naoUteis.has(dia);
 }
 
+const cache = new WeakMap<object, Map<number, Set<DataISO>>>();
+
+/** Todos os dias de bloqueio de um procurador (com cache por `dados`, que é imutável após o carregamento). */
+export function bloqueiosDe(dados: DadosPublicos, procuradorId: number): Set<DataISO> {
+  let porProc = cache.get(dados);
+  if (!porProc) { porProc = new Map(); cache.set(dados, porProc); }
+  let r = porProc.get(procuradorId);
+  if (!r) {
+    r = new Set();
+    for (const p of dados.periodos) if (p.procurador_id === procuradorId) for (const d of diasBloqueados(p, dados)) r.add(d);
+    porProc.set(procuradorId, r);
+  }
+  return r;
+}
+
 /** Dias úteis imediatamente anteriores ao início das férias, em ordem cronológica. */
 export function diasBloqueados(p: Periodo, dados: Pick<DadosPublicos, 'dias_especiais'>): DataISO[] {
   if (!periodoValido(p)) return [];
