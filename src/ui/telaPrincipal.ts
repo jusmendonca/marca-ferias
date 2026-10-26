@@ -13,7 +13,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
   let zoom: Zoom = 'ano';
   let setorId: number | null = null;
   const area = h('div', { class: 'area-gantt' });
-  let limite = 75;
+  let limite = 70;
   const areaCriticos = h('div', {});
   const dialogo = h('dialog', { class: 'dialogo' });
 

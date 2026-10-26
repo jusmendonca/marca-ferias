@@ -18,8 +18,11 @@ describe('períodos críticos', () => {
   });
 
   it('calcula percentual e filtra pelo limite', () => {
-    const todos = periodosCriticos(d, 1, 100);
+    const todos = periodosCriticos(d, 1, 101);
     expect(todos.every(x => x.pct === 50 || x.pct === 0)).toBe(true);
+    // 50% (1/2) está abaixo do mínimo de 70%; 0% também.
+    expect(periodosCriticos(d, 1, 70).every(x => x.pct < 70)).toBe(true);
+    expect(periodosCriticos(d, 1, 50).every(x => x.pct === 0)).toBe(true);
     const criticos = periodosCriticos(d, 1, 25);
     expect(criticos.map(x => [x.inicio, x.fim, x.pct])).toEqual([
       ['2027-03-04', '2027-03-04', 0],

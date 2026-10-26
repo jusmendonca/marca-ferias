@@ -46,7 +46,7 @@ export function trechosDoSetor(dados: DadosPublicos, setorId: number): TrechoSet
   return trechos.map(({ chave: _, ...t }) => t);
 }
 
-/** Trechos com presença igual ou inferior a `limitePct` (use 100 para listar qualquer ausência). */
+/** Trechos com presença abaixo de `limitePct` (use 101 para listar qualquer ausência). */
 export function periodosCriticos(dados: DadosPublicos, setorId: number, limitePct: number): TrechoSetor[] {
-  return trechosDoSetor(dados, setorId).filter(t => t.pct <= limitePct && t.ausentes.length > 0);
+  return trechosDoSetor(dados, setorId).filter(t => t.pct < limitePct && t.ausentes.length > 0);
 }

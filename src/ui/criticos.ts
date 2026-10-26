@@ -5,9 +5,9 @@ import type { DadosPublicos } from '../lib/tipos';
 import { h } from './dom';
 
 export const LIMITES: { valor: number; rotulo: string }[] = [
-  { valor: 50, rotulo: 'Até 50% presentes' },
-  { valor: 75, rotulo: 'Até 75% presentes' },
-  { valor: 100, rotulo: 'Qualquer ausência' },
+  { valor: 50, rotulo: 'Abaixo de 50% presentes' },
+  { valor: 70, rotulo: 'Abaixo de 70% presentes (mínimo da IN)' },
+  { valor: 101, rotulo: 'Qualquer ausência' },
 ];
 
 const ROTULO_MOTIVO = { ferias: 'férias', recesso: 'recesso', bloqueio: 'bloqueio' } as const;
