@@ -152,3 +152,10 @@ td.conflito { color: var(--erro); }
   :root { --rotulo: 120px; }
   .pagina { padding: 12px; }
 }
+
+/* ===== Períodos críticos ===== */
+.cabecalho-criticos { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.cabecalho-criticos h2 { margin: 0; }
+.tabela-rolavel { overflow-x: auto; }
+table.criticos th, table.criticos td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--borda-suave); vertical-align: top; }
+table.criticos .num { text-align: right; white-space: nowrap; }

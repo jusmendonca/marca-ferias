@@ -6,12 +6,15 @@ import { statusProcurador, totalDias } from '../lib/regras';
 import { ROTULO_RECESSO } from '../lib/rotulos';
 import type { DadosPublicos } from '../lib/tipos';
 import { h } from './dom';
+import { LIMITES, renderCriticos } from './criticos';
 import { renderGantt } from './gantt';
 
 export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): void {
   let zoom: Zoom = 'ano';
   let setorId: number | null = null;
   const area = h('div', { class: 'area-gantt' });
+  let limite = 75;
+  const areaCriticos = h('div', {});
   const dialogo = h('dialog', { class: 'dialogo' });
 
   const ativos = dados.procuradores.filter(p => p.ativo);
@@ -19,6 +22,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
 
   function desenhar(): void {
     area.replaceChildren(renderGantt(dados, { zoom, setorId, aoClicarProcurador: abrirDetalhes }));
+    areaCriticos.replaceChildren(renderCriticos(dados, setorId, limite));
   }
 
   function abrirDetalhes(id: number): void {
@@ -81,6 +85,15 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       item('ferias', 'Férias'), item('bloqueio', 'Bloqueio de distribuição (ausência)'), item('recesso', 'Recesso'), item('fds', 'Fim de semana'),
       item('feriado', 'Feriado'), item('facultativo', 'Ponto facultativo'), item('calor', 'Mais gente fora no setor')),
     area,
+    h('section', { class: 'cartao' },
+      h('div', { class: 'cabecalho-criticos' },
+        h('h2', {}, 'Períodos críticos de presença'),
+        h('select', {
+          'aria-label': 'Critério de criticidade',
+          onchange: (e: Event) => { limite = Number((e.target as HTMLSelectElement).value); desenhar(); },
+        }, ...LIMITES.map(l => h('option', { value: String(l.valor), selected: l.valor === limite }, l.rotulo)))),
+      h('p', { class: 'dica' }, 'Trechos de dias úteis com a mesma composição de ausentes (férias, recesso ou bloqueio de distribuição). Respeita o filtro de setor.'),
+      areaCriticos),
     dialogo,
     h('footer', { class: 'rodape' }, h('a', { href: '#/admin' }, 'Administração'))));
   desenhar();
