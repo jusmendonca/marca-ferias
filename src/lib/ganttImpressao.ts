@@ -17,9 +17,9 @@ function pos(p: Periodo): string | null {
   return `left:${(ini / n) * 100}%;width:${((fim - ini + 1) / n) * 100}%`;
 }
 
-function barra(classe: string, p: Periodo, titulo: string, extra = ''): string {
+function barra(classe: string, p: Periodo, titulo: string, extra = '', texto = ''): string {
   const estilo = pos(p);
-  return estilo ? `<i class="${classe}" style="${extra}${estilo}" title="${esc(titulo)}"></i>` : '';
+  return estilo ? `<i class="${classe}" style="${extra}${estilo}" title="${esc(titulo)}">${texto}</i>` : '';
 }
 
 function fundo(dados: DadosPublicos): string {
@@ -34,17 +34,22 @@ function fundo(dados: DadosPublicos): string {
   return html;
 }
 
+const MIN_DIAS_COM_TEXTO = 6;
+
 /** Linha "Presentes no setor": vermelho mais forte quanto maior a fração de ausentes (mesma escala da tela). */
 function linhaOcupacao(dados: DadosPublicos, setorId: number): string {
   let html = '';
   let ini = 0;
   let alfaAtual = -1;
   let rotulo = '';
+  let pctAtual = 100;
   const fechar = (fim: number) => {
-    if (alfaAtual > 0) {
-      html += barra('calor', { inicio: somarDias(INICIO_GANTT, ini), fim: somarDias(INICIO_GANTT, fim) }, rotulo,
-        `background:rgba(220,38,38,${alfaAtual});`);
-    }
+    if (alfaAtual < 0) return;
+    // O percentual só cabe escrito em trechos longos; nos curtos fica no tooltip.
+    const texto = fim - ini + 1 >= MIN_DIAS_COM_TEXTO ? `${pctAtual}%` : '';
+    const cor = alfaAtual > 0.5 ? '#fff' : '#1c2430';
+    html += barra('calor', { inicio: somarDias(INICIO_GANTT, ini), fim: somarDias(INICIO_GANTT, fim) }, rotulo,
+      `background:rgba(220,38,38,${alfaAtual});color:${cor};`, texto);
   };
   for (let i = 0; i < totalDiasGantt(); i++) {
     const o = ausenciasNoDia(dados, setorId, somarDias(INICIO_GANTT, i));
@@ -53,11 +58,12 @@ function linhaOcupacao(dados: DadosPublicos, setorId: number): string {
       if (i > 0) fechar(i - 1);
       ini = i;
       alfaAtual = alfa;
-      rotulo = `${o.presentes}/${o.total} presentes (${Math.round((o.presentes / (o.total || 1)) * 100)}%)`;
+      pctAtual = Math.round((o.presentes / (o.total || 1)) * 100);
+      rotulo = `${o.presentes}/${o.total} presentes (${pctAtual}%)`;
     }
   }
   fechar(totalDiasGantt() - 1);
-  return `<div class="linha oc"><div class="nome">Presentes no setor<small>quanto mais vermelho, menos gente</small></div><div class="trilha">${html}</div></div>`;
+  return `<div class="linha oc"><div class="nome">Presentes no setor<small>percentual de quem fica</small></div><div class="trilha">${html}</div></div>`;
 }
 
 const ESTILO = `
@@ -77,7 +83,7 @@ i { position: absolute; display: block; } .f { top: 0; bottom: 0; }
 .ferias { top: 5px; height: 12px; background: #2f7de1; border-radius: 2px; }
 .bloqueio { top: 5px; height: 12px; background: rgba(47,125,225,.4); border: 1px solid #2f7de1; }
 .recesso { top: 5px; height: 12px; background: repeating-linear-gradient(45deg, #8a5cf6 0 3px, transparent 3px 6px); border: 1px solid #8a5cf6; }
-.oc .trilha { height: 14px; } .oc .nome { font-size: 9px; } .calor { top: 0; bottom: 0; }
+.oc .trilha { height: 14px; } .oc .nome { font-size: 9px; } .calor { top: 0; bottom: 0; font-size: 7px; line-height: 14px; text-align: center; overflow: hidden; }
 .legenda { display: flex; gap: 14px; margin-top: 10px; font-size: 9px; align-items: center; }
 .legenda i { position: static; display: inline-block; width: 16px; height: 9px; vertical-align: middle; margin-right: 3px; border-radius: 2px; }
 `;
@@ -118,6 +124,6 @@ export function gerarGanttImpressao(dados: DadosPublicos, setorId: number | null
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Gantt de férias 2027</title><style>${ESTILO}</style></head><body>
 <h1>Férias 2027 — Núcleo de Educação (EFIN1)</h1><p class="sub">Gantt de 21/12/2026 a 31/12/2027 · gerado em ${formatarBR(new Date().toISOString().slice(0, 10))}</p>
 ${secoes || '<p>Nenhum procurador para exibir.</p>'}
-<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="calor" style="background:linear-gradient(90deg,rgba(220,38,38,.15),rgba(220,38,38,.9));width:36px"></i>Presentes no setor (mais vermelho = mais ausentes)</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
+<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="calor" style="background:linear-gradient(90deg,rgba(220,38,38,.15),rgba(220,38,38,.9));width:36px"></i>Presentes no setor (% de quem fica; mais vermelho = mais ausentes)</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
 </body></html>`;
 }
