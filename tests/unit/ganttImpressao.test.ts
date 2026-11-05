@@ -15,6 +15,9 @@ describe('gerarGanttImpressao', () => {
     expect(html).toContain('Presentes no setor');
     expect(html).toContain('rgba(220,38,38,0.45)');
     expect(html).toContain('>50%</i>');
+    expect(html).toContain('Períodos de ausência — Contencioso');
+    // Ana e Bruno de férias juntos (04–05/03 dias úteis): 0 de 2 presentes, linha crítica
+    expect(html).toMatch(/<tr class="critico"><td>04\/03\/2027<\/td><td class="n">1<\/td><td class="n"><b>0%<\/b><\/td><td class="n">0 de 2<\/td><td class="n">2<\/td>/);
     expect(html).toContain('>100%</i>');
   });
 

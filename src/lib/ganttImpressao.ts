@@ -1,4 +1,5 @@
 import { diasBloqueados } from './bloqueios';
+import { trechosDoSetor } from './criticos';
 import { diaDaSemana, diasCorridos, formatarBR, somarDias } from './datas';
 import { indiceDia, INICIO_GANTT, meses, totalDiasGantt } from './escala';
 import { ausenciasNoDia, periodosDe, procuradoresDoSetor, setoresOrdenados } from './ocupacao';
@@ -35,6 +36,21 @@ function fundo(dados: DadosPublicos): string {
 }
 
 const MIN_DIAS_COM_TEXTO = 6;
+const MINIMO_PRESENCA_PCT = 70;
+const MOTIVO = { ferias: 'férias', recesso: 'recesso', bloqueio: 'bloqueio' } as const;
+
+/** Discriminação dos períodos em que o setor tem ausências, com percentual e número de presentes. */
+function tabelaAusencias(dados: DadosPublicos, setorId: number): string {
+  const trechos = trechosDoSetor(dados, setorId).filter(t => t.ausentes.length > 0);
+  if (!trechos.length) return '<p class="dica">Nenhuma ausência no setor.</p>';
+  const linhas = trechos.map(t => {
+    const periodo = t.inicio === t.fim ? formatarBR(t.inicio) : `${formatarBR(t.inicio)} a ${formatarBR(t.fim)}`;
+    const nomes = t.ausentes.map(a => `${esc(a.procurador.nome)} (${MOTIVO[a.motivo]})`).join(', ');
+    const critico = t.pct < MINIMO_PRESENCA_PCT ? ' class="critico"' : '';
+    return `<tr${critico}><td>${periodo}</td><td class="n">${t.diasUteis}</td><td class="n"><b>${Math.round(t.pct)}%</b></td><td class="n">${t.presentes} de ${t.total}</td><td class="n">${t.ausentes.length}</td><td>${nomes}</td></tr>`;
+  }).join('');
+  return `<table><thead><tr><th>Período (dias úteis)</th><th class="n">Dias úteis</th><th class="n">Presentes (%)</th><th class="n">Presentes</th><th class="n">Ausentes</th><th>Quem está ausente</th></tr></thead><tbody>${linhas}</tbody></table>`;
+}
 
 /** Linha "Presentes no setor": vermelho mais forte quanto maior a fração de ausentes (mesma escala da tela). */
 function linhaOcupacao(dados: DadosPublicos, setorId: number): string {
@@ -71,7 +87,7 @@ const ESTILO = `
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font: 11px/1.3 system-ui, Arial, sans-serif; color: #1c2430; margin: 0; }
 h1 { font-size: 16px; margin: 0 0 2px; } .sub { color: #5a6577; margin: 0 0 8px; }
-h2 { font-size: 12px; margin: 10px 0 3px; } section { break-inside: avoid; }
+h2 { font-size: 12px; margin: 10px 0 3px; } section { break-inside: avoid; } h2 { break-after: avoid; }
 .linha { display: flex; border-bottom: 1px solid #e3e7ed; }
 .nome { width: 52mm; flex: none; padding: 2px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nome small { display: block; color: #5a6577; font-size: 8px; }
@@ -84,6 +100,10 @@ i { position: absolute; display: block; } .f { top: 0; bottom: 0; }
 .bloqueio { top: 5px; height: 12px; background: rgba(47,125,225,.4); border: 1px solid #2f7de1; }
 .recesso { top: 5px; height: 12px; background: repeating-linear-gradient(45deg, #8a5cf6 0 3px, transparent 3px 6px); border: 1px solid #8a5cf6; }
 .oc .trilha { height: 14px; } .oc .nome { font-size: 9px; } .calor { top: 0; bottom: 0; font-size: 7px; line-height: 14px; text-align: center; overflow: hidden; }
+h3 { font-size: 11px; margin: 8px 0 3px; }
+table { border-collapse: collapse; width: 100%; font-size: 9px; margin-bottom: 6px; } thead { display: table-header-group; } tr { break-inside: avoid; }
+th, td { text-align: left; padding: 2px 5px; border-bottom: 1px solid #e3e7ed; } th { background: #f0f3f7; } .n { text-align: right; white-space: nowrap; }
+tr.critico td { color: #b42318; } .dica { font-size: 9px; color: #5a6577; }
 .legenda { display: flex; gap: 14px; margin-top: 10px; font-size: 9px; align-items: center; }
 .legenda i { position: static; display: inline-block; width: 16px; height: 9px; vertical-align: middle; margin-right: 3px; border-radius: 2px; }
 `;
@@ -118,12 +138,12 @@ export function gerarGanttImpressao(dados: DadosPublicos, setorId: number | null
       const detalhe = `${datas || 'sem férias marcadas'}${p.recesso ? ` · recesso ${ROTULO_RECESSO[p.recesso]}` : ''}`;
       return `<div class="linha"><div class="nome">${esc(p.nome)}<small class="${status}">${esc(detalhe)}</small></div><div class="trilha">${bg}${barras}</div></div>`;
     }).join('');
-    return `<section><h2>${esc(s.nome)} (${procs.length})</h2><div class="linha cab"><div class="nome"></div><div class="trilha">${cab}</div></div>${linhas}${linhaOcupacao(dados, s.id)}</section>`;
+    return `<section><h2>${esc(s.nome)} (${procs.length})</h2><div class="linha cab"><div class="nome"></div><div class="trilha">${cab}</div></div>${linhas}${linhaOcupacao(dados, s.id)}</section><h3>Períodos de ausência — ${esc(s.nome)}</h3>${tabelaAusencias(dados, s.id)}`;
   }).join('');
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Gantt de férias 2027</title><style>${ESTILO}</style></head><body>
 <h1>Férias 2027 — Núcleo de Educação (EFIN1)</h1><p class="sub">Gantt de 21/12/2026 a 31/12/2027 · gerado em ${formatarBR(new Date().toISOString().slice(0, 10))}</p>
 ${secoes || '<p>Nenhum procurador para exibir.</p>'}
-<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="calor" style="background:linear-gradient(90deg,rgba(220,38,38,.15),rgba(220,38,38,.9));width:36px"></i>Presentes no setor (% de quem fica; mais vermelho = mais ausentes)</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
+<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="calor" style="background:linear-gradient(90deg,rgba(220,38,38,.15),rgba(220,38,38,.9));width:36px"></i>Presentes no setor (% de quem fica; mais vermelho = mais ausentes)</span><span class="crit">Linhas em vermelho: presença abaixo de 70% (mínimo da IN)</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
 </body></html>`;
 }
