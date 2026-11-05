@@ -7,7 +7,6 @@ import { ROTULO_RECESSO } from '../lib/rotulos';
 import type { DadosPublicos } from '../lib/tipos';
 import { h } from './dom';
 import { LIMITES, renderCriticos } from './criticos';
-import { gerarGanttImpressao } from '../lib/ganttImpressao';
 import { renderGantt } from './gantt';
 
 export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): void {
@@ -52,30 +51,17 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
     dialogo.showModal();
   }
 
-  /**
-   * Imprime o Gantt (A4 paisagem); na janela de impressão basta escolher "Salvar como PDF".
-   * Numa janela própria o navegador respeita `@page { size: landscape }`; em iframe, não.
-   */
-  function exportarGantt(): void {
-    const html = gerarGanttImpressao(dados, setorId);
-    const janela = window.open('', '_blank');
-    if (janela) {
-      janela.document.write(html);
-      janela.document.close();
-      let impresso = false;
-      const imprimir = () => {
-        if (impresso) return;
-        impresso = true;
-        janela.focus();
-        janela.print();
-      };
-      janela.addEventListener('load', imprimir);
-      // `load` pode já ter disparado após o `close()`.
-      setTimeout(imprimir, 500);
-      return;
+  /** Gera o PDF direto em A4 paisagem (carregado sob demanda para não pesar a tela principal). */
+  async function exportarGantt(botao: HTMLButtonElement): Promise<void> {
+    botao.disabled = true;
+    try {
+      const { gerarGanttPdf, NOME_ARQUIVO_PDF } = await import('../lib/ganttPdf');
+      gerarGanttPdf(dados, setorId).save(NOME_ARQUIVO_PDF);
+    } catch {
+      window.alert('Não foi possível gerar o PDF. Tente novamente.');
+    } finally {
+      botao.disabled = false;
     }
-    // Sem janela própria a impressão sairia em retrato; melhor pedir a liberação do pop-up.
-    window.alert('O navegador bloqueou a janela de impressão. Permita pop-ups para este site (ícone na barra de endereço) e clique de novo em "Exportar Gantt (PDF)".');
   }
 
   const zooms: Zoom[] = ['ano', 'trimestre', 'mes'];
@@ -106,7 +92,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       h('a', { href: '#/marcar', class: 'botao primario' }, 'Marcar minhas férias')),
     h('div', { class: 'barra-ferramentas' },
       filtro,
-      h('button', { type: 'button', class: 'botao', onclick: exportarGantt }, 'Exportar Gantt (PDF)'),
+      h('button', { type: 'button', class: 'botao', onclick: (e: Event) => { void exportarGantt(e.currentTarget as HTMLButtonElement); } }, 'Exportar Gantt (PDF)'),
       h('div', { class: 'grupo-zoom', role: 'group', 'aria-label': 'Zoom' }, ...botoesZoom),
       h('p', { class: 'contador-geral' }, `${completos} de ${ativos.length} Procuradores com marcação completa`)),
     h('div', { class: 'legenda' },
