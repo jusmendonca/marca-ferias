@@ -52,10 +52,30 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
     dialogo.showModal();
   }
 
-  /** Imprime o Gantt (A4 paisagem) num iframe oculto; na janela de impressão basta escolher "Salvar como PDF". */
+  /**
+   * Imprime o Gantt (A4 paisagem); na janela de impressão basta escolher "Salvar como PDF".
+   * Numa janela própria o navegador respeita `@page { size: landscape }`; em iframe, não.
+   */
   function exportarGantt(): void {
+    const html = gerarGanttImpressao(dados, setorId);
+    const janela = window.open('', '_blank');
+    if (janela) {
+      janela.document.write(html);
+      janela.document.close();
+      let impresso = false;
+      const imprimir = () => {
+        if (impresso) return;
+        impresso = true;
+        janela.focus();
+        janela.print();
+      };
+      janela.addEventListener('load', imprimir);
+      // `load` pode já ter disparado após o `close()`.
+      setTimeout(imprimir, 500);
+      return;
+    }
     const quadro = h('iframe', { 'aria-hidden': 'true', style: 'position:fixed;width:0;height:0;border:0;right:0;bottom:0' });
-    quadro.srcdoc = gerarGanttImpressao(dados, setorId);
+    quadro.srcdoc = html;
     quadro.onload = () => {
       quadro.contentWindow?.focus();
       quadro.contentWindow?.print();
