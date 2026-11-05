@@ -12,6 +12,8 @@ describe('gerarGanttImpressao', () => {
     expect(html).toContain('class="bloqueio"');
     expect(html).toContain('class="recesso"');
     expect(html).toContain('01/03–10/03');
+    expect(html).toContain('Presentes no setor');
+    expect(html).toContain('rgba(220,38,38,0.45)');
   });
 
   it('filtra por setor e escapa HTML nos nomes', () => {

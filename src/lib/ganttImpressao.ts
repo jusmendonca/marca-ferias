@@ -1,7 +1,7 @@
 import { diasBloqueados } from './bloqueios';
 import { diaDaSemana, diasCorridos, formatarBR, somarDias } from './datas';
 import { indiceDia, INICIO_GANTT, meses, totalDiasGantt } from './escala';
-import { periodosDe, procuradoresDoSetor, setoresOrdenados } from './ocupacao';
+import { ausenciasNoDia, periodosDe, procuradoresDoSetor, setoresOrdenados } from './ocupacao';
 import { statusProcurador } from './regras';
 import { ROTULO_RECESSO } from './rotulos';
 import type { DadosPublicos, Periodo } from './tipos';
@@ -17,9 +17,9 @@ function pos(p: Periodo): string | null {
   return `left:${(ini / n) * 100}%;width:${((fim - ini + 1) / n) * 100}%`;
 }
 
-function barra(classe: string, p: Periodo, titulo: string): string {
+function barra(classe: string, p: Periodo, titulo: string, extra = ''): string {
   const estilo = pos(p);
-  return estilo ? `<i class="${classe}" style="${estilo}" title="${esc(titulo)}"></i>` : '';
+  return estilo ? `<i class="${classe}" style="${extra}${estilo}" title="${esc(titulo)}"></i>` : '';
 }
 
 function fundo(dados: DadosPublicos): string {
@@ -32,6 +32,32 @@ function fundo(dados: DadosPublicos): string {
     if (classe) html += barra(`f ${classe}`, { inicio: dia, fim: dia }, '');
   }
   return html;
+}
+
+/** Linha "Presentes no setor": vermelho mais forte quanto maior a fração de ausentes (mesma escala da tela). */
+function linhaOcupacao(dados: DadosPublicos, setorId: number): string {
+  let html = '';
+  let ini = 0;
+  let alfaAtual = -1;
+  let rotulo = '';
+  const fechar = (fim: number) => {
+    if (alfaAtual > 0) {
+      html += barra('calor', { inicio: somarDias(INICIO_GANTT, ini), fim: somarDias(INICIO_GANTT, fim) }, rotulo,
+        `background:rgba(220,38,38,${alfaAtual});`);
+    }
+  };
+  for (let i = 0; i < totalDiasGantt(); i++) {
+    const o = ausenciasNoDia(dados, setorId, somarDias(INICIO_GANTT, i));
+    const alfa = o.total ? Math.round(((o.total - o.presentes) / o.total) * 0.9 * 100) / 100 : 0;
+    if (alfa !== alfaAtual) {
+      if (i > 0) fechar(i - 1);
+      ini = i;
+      alfaAtual = alfa;
+      rotulo = `${o.presentes}/${o.total} presentes (${Math.round((o.presentes / (o.total || 1)) * 100)}%)`;
+    }
+  }
+  fechar(totalDiasGantt() - 1);
+  return `<div class="linha oc"><div class="nome">Presentes no setor<small>quanto mais vermelho, menos gente</small></div><div class="trilha">${html}</div></div>`;
 }
 
 const ESTILO = `
@@ -51,6 +77,7 @@ i { position: absolute; display: block; } .f { top: 0; bottom: 0; }
 .ferias { top: 5px; height: 12px; background: #2f7de1; border-radius: 2px; }
 .bloqueio { top: 5px; height: 12px; background: rgba(47,125,225,.4); border: 1px solid #2f7de1; }
 .recesso { top: 5px; height: 12px; background: repeating-linear-gradient(45deg, #8a5cf6 0 3px, transparent 3px 6px); border: 1px solid #8a5cf6; }
+.oc .trilha { height: 14px; } .oc .nome { font-size: 9px; } .calor { top: 0; bottom: 0; }
 .legenda { display: flex; gap: 14px; margin-top: 10px; font-size: 9px; align-items: center; }
 .legenda i { position: static; display: inline-block; width: 16px; height: 9px; vertical-align: middle; margin-right: 3px; border-radius: 2px; }
 `;
@@ -85,12 +112,12 @@ export function gerarGanttImpressao(dados: DadosPublicos, setorId: number | null
       const detalhe = `${datas || 'sem férias marcadas'}${p.recesso ? ` · recesso ${ROTULO_RECESSO[p.recesso]}` : ''}`;
       return `<div class="linha"><div class="nome">${esc(p.nome)}<small class="${status}">${esc(detalhe)}</small></div><div class="trilha">${bg}${barras}</div></div>`;
     }).join('');
-    return `<section><h2>${esc(s.nome)} (${procs.length})</h2><div class="linha cab"><div class="nome"></div><div class="trilha">${cab}</div></div>${linhas}</section>`;
+    return `<section><h2>${esc(s.nome)} (${procs.length})</h2><div class="linha cab"><div class="nome"></div><div class="trilha">${cab}</div></div>${linhas}${linhaOcupacao(dados, s.id)}</section>`;
   }).join('');
 
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Gantt de férias 2027</title><style>${ESTILO}</style></head><body>
 <h1>Férias 2027 — Núcleo de Educação (EFIN1)</h1><p class="sub">Gantt de 21/12/2026 a 31/12/2027 · gerado em ${formatarBR(new Date().toISOString().slice(0, 10))}</p>
 ${secoes || '<p>Nenhum procurador para exibir.</p>'}
-<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
+<div class="legenda"><span><i class="ferias"></i>Férias</span><span><i class="bloqueio"></i>Bloqueio de distribuição</span><span><i class="recesso"></i>Recesso</span><span><i class="calor" style="background:linear-gradient(90deg,rgba(220,38,38,.15),rgba(220,38,38,.9));width:36px"></i>Presentes no setor (mais vermelho = mais ausentes)</span><span><i class="fds"></i>Fim de semana</span><span><i class="feriado"></i>Feriado</span><span><i class="facultativo"></i>Ponto facultativo</span></div>
 </body></html>`;
 }
