@@ -74,14 +74,8 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       setTimeout(imprimir, 500);
       return;
     }
-    const quadro = h('iframe', { 'aria-hidden': 'true', style: 'position:fixed;width:0;height:0;border:0;right:0;bottom:0' });
-    quadro.srcdoc = html;
-    quadro.onload = () => {
-      quadro.contentWindow?.focus();
-      quadro.contentWindow?.print();
-      setTimeout(() => quadro.remove(), 60_000);
-    };
-    document.body.append(quadro);
+    // Sem janela própria a impressão sairia em retrato; melhor pedir a liberação do pop-up.
+    window.alert('O navegador bloqueou a janela de impressão. Permita pop-ups para este site (ícone na barra de endereço) e clique de novo em "Exportar Gantt (PDF)".');
   }
 
   const zooms: Zoom[] = ['ano', 'trimestre', 'mes'];

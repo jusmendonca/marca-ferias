@@ -83,7 +83,7 @@ function linhaOcupacao(dados: DadosPublicos, setorId: number): string {
 }
 
 const ESTILO = `
-@page { size: A4 landscape; margin: 10mm; }
+@page { size: 297mm 210mm; margin: 10mm; }
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 body { font: 11px/1.3 system-ui, Arial, sans-serif; color: #1c2430; margin: 0; }
 h1 { font-size: 16px; margin: 0 0 2px; } .sub { color: #5a6577; margin: 0 0 8px; }
