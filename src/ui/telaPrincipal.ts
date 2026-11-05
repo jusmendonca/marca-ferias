@@ -7,6 +7,7 @@ import { ROTULO_RECESSO } from '../lib/rotulos';
 import type { DadosPublicos } from '../lib/tipos';
 import { h } from './dom';
 import { LIMITES, renderCriticos } from './criticos';
+import { gerarGanttImpressao } from '../lib/ganttImpressao';
 import { renderGantt } from './gantt';
 
 export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): void {
@@ -51,6 +52,18 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
     dialogo.showModal();
   }
 
+  /** Imprime o Gantt (A4 paisagem) num iframe oculto; na janela de impressão basta escolher "Salvar como PDF". */
+  function exportarGantt(): void {
+    const quadro = h('iframe', { 'aria-hidden': 'true', style: 'position:fixed;width:0;height:0;border:0;right:0;bottom:0' });
+    quadro.srcdoc = gerarGanttImpressao(dados, setorId);
+    quadro.onload = () => {
+      quadro.contentWindow?.focus();
+      quadro.contentWindow?.print();
+      setTimeout(() => quadro.remove(), 60_000);
+    };
+    document.body.append(quadro);
+  }
+
   const zooms: Zoom[] = ['ano', 'trimestre', 'mes'];
   const botoesZoom: HTMLButtonElement[] = zooms.map(z => h('button', {
     type: 'button', class: 'botao', 'aria-pressed': String(z === zoom),
@@ -79,6 +92,7 @@ export function montarTelaPrincipal(raiz: HTMLElement, dados: DadosPublicos): vo
       h('a', { href: '#/marcar', class: 'botao primario' }, 'Marcar minhas férias')),
     h('div', { class: 'barra-ferramentas' },
       filtro,
+      h('button', { type: 'button', class: 'botao', onclick: exportarGantt }, 'Exportar Gantt (PDF)'),
       h('div', { class: 'grupo-zoom', role: 'group', 'aria-label': 'Zoom' }, ...botoesZoom),
       h('p', { class: 'contador-geral' }, `${completos} de ${ativos.length} Procuradores com marcação completa`)),
     h('div', { class: 'legenda' },
